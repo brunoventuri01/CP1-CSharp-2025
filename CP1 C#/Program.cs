@@ -11,7 +11,6 @@ var input = Console.ReadLine();
 var defaultPath = @"C:\Users\labsfiap\Desktop\notas";
 var inputPath = string.IsNullOrWhiteSpace(input) ? defaultPath : input!.Trim('"', ' ');
 
-// Resolve se é ZIP ou pasta
 string workDir;
 
 if (File.Exists(inputPath) && Path.GetExtension(inputPath).Equals(".zip", StringComparison.OrdinalIgnoreCase))
@@ -31,7 +30,6 @@ else
     return;
 }
 
-// Busca .txt (somente neste diretório, sem subpastas — ajuste para AllDirectories se quiser)
 var files = Directory.EnumerateFiles(workDir, "*.txt", SearchOption.TopDirectoryOnly).ToArray();
 
 if (files.Length == 0)
@@ -42,13 +40,10 @@ if (files.Length == 0)
 
 Console.WriteLine($"\nLocalizados {files.Length} arquivo(s). Iniciando processamento...\n");
 
-// Ajuste do grau de paralelismo
 var degreeOfParallelism = Math.Max(1, Environment.ProcessorCount - 1);
 
-// Resultados thread-safe
 var results = new ConcurrentBag<(string FileName, long Lines, long Words)>();
 
-// Cancelamento opcional via CTRL+C
 using var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
 
@@ -82,7 +77,6 @@ try
         }
     );
 
-    // Gera relatório ao lado do executável
     var exportDir = Path.Combine(AppContext.BaseDirectory, "export");
     Directory.CreateDirectory(exportDir);
     var reportPath = Path.Combine(exportDir, "relatorio.txt");
@@ -102,13 +96,11 @@ catch (OperationCanceledException)
     Console.WriteLine("\nOperação cancelada pelo usuário.");
 }
 
-// ===== Helpers =====
 static async Task<(long Lines, long Words)> CountLinesAndWordsAsync(string path, CancellationToken ct)
 {
     long lineCount = 0;
     long wordCount = 0;
 
-    // Conta palavras com suporte a Unicode (acentos). Para considerar hífen, troque para [\\p{L}\\p{N}_-]+
     var wordRegex = new Regex(@"\b[\p{L}\p{N}_]+\b", RegexOptions.Compiled);
 
     using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 16, useAsync: true);
